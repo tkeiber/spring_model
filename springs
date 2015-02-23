@@ -1,0 +1,126 @@
+# Four Mass Spring Model 
+# Trevor Keiber
+# 2-19-2015
+
+# In this notebook I compute the eigenfrequency spectra for a four mass spring model.  From this correlations, thermal broadening 
+# with temperature, and spring constants are computed.
+
+#######################
+
+% pylab inline
+import pylab as pl
+from sympy import *
+import pandas as pd
+
+#####################
+
+
+# diagram of sprign model showing a unit cell with veriables used din the analysis...
+# Mr = Mass Rattler, Mc = Mass Cage ie Ru, Ms = Mass Square ie As4 or CuO4
+from scipy import misc
+springfig=misc.imread('exafs_data//fig_4m.png')
+pl.axes([0.025, 0.025, 1.5, 1.5])
+pl.axis('off')
+pl.imshow(springfig)
+
+####################
+
+#initialize constants
+
+Mc = 404**1.67*10**-27;
+Mr = 140*1.67*10**-27;
+Ms = 300*1.67*10**-27;
+Kcc = 12;
+Krs = 2.2;
+Krc =1.2;
+Ksc = 1.2;
+a = 1;
+kb = 8.617*10**-5;
+hb = 4.136*10**-15;
+T = 300;
+
+eig0=array([]); eig1=array([]); eig2=array([]); eig3=array([]);
+sigKcc=0; sigKrs=0; sigKrc=0; sigKsc=0;
+
+nvals=array(range(-31,31))
+
+for n in nvals:
+    q=n*0.1
+    mat = array([[(2*Kcc + Krc + Ksc)/Mc, -e**(a*q*1j/4)*Krc/np.sqrt(Mc*Mr), -(e**(-a*q*1j/2) + e**(a*q*1j/2))*Kcc/Mc,-e**(-a*q*1j/4)*Ksc/np.sqrt(Mc*Ms)],
+    [-e**(-a*q*1j/4)*Krc/np.sqrt(Mc*Mr), (2*Krs + 2*Krc)/Mr, -e**(a*q*1j/4)*Krc/np.sqrt(Mc*Mr), -(e**(-a*q*1j/2) + e**(a*q*1j/2))*Krs/np.sqrt(Mr*Ms)],
+    [(-e**(-q*a*1j/2) - e**(q*a*1j/2))*Kcc/Mc, -e**(-a*q*1j/4)*Krc/np.sqrt(Mc*Mr), (2*Kcc + Krc + Ksc)/Mc, -e**(a*q*1j/4)*Ksc/np.sqrt(Mc*Ms)],   
+    [-e**(a*q*1j/4)*Ksc/np.sqrt(Mc*Ms), -(e**(-q*a*1j/2)  + e**(a*q*1j/2))*Krs/np.sqrt(Mr*Ms), -e**(-a*q*1j/4)*Ksc/np.sqrt(Mc*Ms), (2*Krs + 2*Ksc)/Ms]])
+
+    eigval,eigvec= eig(mat)
+    eigval=eigval.real
+
+    idx = eigval.argsort()   
+    eigval = eigval[idx]
+    eigvec = eigvec[:,idx]
+    
+    
+    #eigval[0]=np.sqrt(eigval[0])    
+    eig0=append(eig0,np.sqrt(eigval[0]))
+    eig1=append(eig1,np.sqrt(eigval[1]))
+    eig2=append(eig2,np.sqrt(eigval[2]))
+    eig3=append(eig3,np.sqrt(eigval[3]))
+    
+    for ii in range(4):
+        sKcc = eigvec[ii,0]/np.sqrt(Mc)-eigvec[ii,2]*e**(q*a*1j/2)/np.sqrt(Mc)
+        sKrs = eigvec[ii,1]/np.sqrt(Mr)-eigvec[ii,3]*e**(q*a*1j/2)/np.sqrt(Ms)
+        sKrc = eigvec[ii,1]/np.sqrt(Mr)-eigvec[ii,2]*e**(q*a*1j/4)/np.sqrt(Mc)
+        sKsc = eigvec[ii,2]/np.sqrt(Mc)-eigvec[ii,3]*e**(q*a*1j/4)/np.sqrt(Ms)
+        
+        therm = hb/(2*np.sqrt(eigval[ii]))*coth(np.sqrt(eigval[ii])*hb/(2*kb*T))
+    
+        solKcc = conj(sKcc)*sKcc*therm
+        solKrs = conj(sKrs)*sKrs*therm
+        solKrc = conj(sKrc)*sKrc*therm
+        solKsc = conj(sKsc)*sKsc*therm
+        
+        if n!=0:
+            sigKcc+=solKcc
+            sigKrs+=solKrs
+            sigKrc+=solKrc
+            sigKsc+=solKsc
+        
+
+#sig2 values
+sigKcc=sigKcc/len(nvals)
+sigKcc=sigKrs/len(nvals)
+sigKcc=sigKrc/len(nvals)
+sigKcc=sigKsc/len(nvals)
+
+print [sigKcc,sigKrs,sigKrc,sigKsc]
+    
+#compute effective spring constates
+eKcc=kb*T/sigKcc
+eKrs=kb*T/sigKrs
+eKrc=kb*T/sigKrc
+eKsc=kb*T/sigKsc
+
+print [eKcc,eKrs,eKrc,eKsc]
+    
+#############################
+
+# Plot eigenvalues
+
+pl.xlim(-3.14,3.14)
+
+pl.title('Dispersion 4m')
+
+pl.xlabel('qa')
+pl.ylabel('w**2')
+
+pl.text(-1, 4.5e12, 'T=25K, BaFe2As2 k15', style='italic',
+        bbox={'facecolor':'red', 'alpha':0.5, 'pad':10})
+
+qvals=0.1*nvals
+pl.scatter(qvals,eig0,color='blue')
+pl.scatter(qvals,eig1,color='red')
+pl.scatter(qvals,eig2,color='green')
+pl.scatter(qvals,eig3,color='black')
+
+
+pl.show()
+#pl.savefig('exafs_data\eigval.ps')
