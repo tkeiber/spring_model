@@ -1,0 +1,33 @@
+% pylab inline
+import pylab as pl
+from sympy import *
+import pandas as pd
+
+
+
+dataD = loadtxt('dataDi.dat')
+dataU = loadtxt('dataUi.dat')
+
+Xd=[];Yd=[];
+for ii in range(len(dataD)):
+    Xd.append(dataD[ii,0])
+    Yd.append(dataD[ii,1])
+
+Xu=[];Yu=[];  
+for ii in range(len(dataU)):
+    Xu.append(dataU[ii,0])
+    Yu.append(dataU[ii,1])
+    
+    
+    
+    pl.xlim(0,230)
+pl.ylim(-.001,.017)
+
+pl.title('Dispersion 4m')
+
+pl.xlabel('qa')
+pl.ylabel('w**2')
+
+pl.scatter(Xd,Yd,color='red')
+pl.scatter(Xu,Yu,color='blue')
+    
